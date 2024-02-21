@@ -251,6 +251,105 @@ fn reduce_add[ty: DType, size: Int](x: SIMD[ty, size]) -> Int:
 
 
 # Mojo Types are just parameter expressions
+# Something like zig
+struct Array[T: AnyRegType]:
+    var data: Pointer[T]
+    var size: Int
+
+    fn __init__(inout self, size: Int, value: T):
+        self.size = size
+        self.data = Pointer[T].alloc(size)
+        for i in range(size):
+            self.data[i] = value
+
+    fn __getitem__(self, index: Int) -> T:
+        return self.data[index]
+
+    fn __del__(owned self):
+        self.data.free()
+
+
+fn use_array():
+    var v = Array[Float32](4, 3.14)
+    print(v[0], v[1], v[2], v[3])
+
+
+fn parallelize[func: fn (Int) -> None](num_work_items: Int):
+    #  This is not really running on parallel.
+    for i in range(num_work_items):
+        func(i)
+
+
+fn print_value(value: Int):
+    print(value)
+
+
+# Alias. Named Parameter Expressions evaluated at Compile Time :)
+@value
+struct MyDType:
+    var value: UInt8
+    alias invalid = MyDType(0)
+    alias bool = MyDType(1)
+
+
+# Automatic Parametrization of functions
+fn print_params(vec: SIMD):
+    print(vec.type)
+    print(vec.size)
+
+
+fn see_parametrization():
+    let v = SIMD[DType.float16, 4](1.0, 2.0, 3.0, 4.0)
+    print_params(v)
+
+
+fn on_type():
+    print(SIMD[DType.float16, 4].type)
+
+
+fn on_instance():
+    let v = SIMD[DType.float16, 4](1.0, 2.0, 3.0, 4.0)
+    print(v.type)
+
+
+# Using Automatic Parametrization shared in the function
+
+
+fn interleave(v1: SIMD, v2: SIMD[v1.type, v1.size]) -> SIMD[v1.type, v1.size * 2]:
+    var result = SIMD[v1.type, v1.size * 2]()
+    for i in range(v1.size):
+        result[i * 2] = v1[i]
+        result[i * 2 + 1] = v2[i]
+    return result
+
+
+fn use_interleave():
+    let v1 = SIMD[DType.float16, 4](1.0, 2.0, 3.0, 4.0)
+    let v2 = SIMD[DType.float16, 4](5.0, 6.0, 7.0, 8.0)
+    let v3 = interleave(v1, v2)
+    print(v3)
+
+
+# Partial Automatic Parametrization
+@value
+struct Fudge[sugar: Int, cream: Int, chocolate: Int = 7](Stringable):
+    fn __str__(self) -> String:
+        let values = StaticIntTuple[3](sugar, cream, chocolate)
+        return "Fudge" + String(values)
+
+
+fn eat(fudge: Fudge[5]):
+    print("Ate", fudge)
+
+
+# specify the unbound parameters
+fn devour(f: Fudge[_, 6, _]):
+    print(str("Devoured ") + str(f))
+
+
+# specify the unbound parameters with names if you want
+fn take_a_bit(f: Fudge[_, chocolate=6, cream=_]):
+    print(str("Devoured ") + str(f))
 
 
 # Main part
@@ -271,3 +370,15 @@ fn main() raises:
     concat_values()
     let a = reduce_add(SIMD[DType.index, 4](1, 2, 3, 4))
     print(a)
+    use_array()
+    parallelize[print_value](10)
+    print(MyDType.bool.value)
+    print(DType.bool.value)
+    see_parametrization()
+    use_interleave()
+    eat(Fudge[5, 5]())
+    eat(Fudge[5, 8]())
+    # eat(Fudge[5, 8, 9]()) # Errors because I'm not using the default third parameter. Will change in future
+    # eat(Fudge[2, 8]()) # Errors because I'm not using the defined parameter for eat
+    devour(Fudge[5, 6, 7]())
+    # devour(Fudge[5, 7, 7]()) # Errors because I'm not using the defined parameter for devour
