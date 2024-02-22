@@ -1,0 +1,40 @@
+from timeit import timeit
+from typing import Any
+
+import numpy as np
+
+Array = np.ndarray[Any, np.dtype[np.float64]]
+
+
+class Matrix:
+    def __init__(self, value: list[list[float]], rows: int, cols: int):
+        self.value = value
+        self.rows = rows
+        self.cols = cols
+
+    def __getitem__(self, idxs: tuple[int, int]) -> float:
+        return self.value[idxs[0]][idxs[1]]
+
+    def __setitem__(self, idxs: tuple[int, int], value: float):
+        self.value[idxs[0]][idxs[1]] = value
+
+
+def matmul_python(C: Matrix, A: Matrix, B: Matrix):
+    for m in range(C.rows):
+        for k in range(A.cols):
+            for n in range(C.cols):
+                C[m, n] += A[m, k] * B[k, n]
+
+
+def benchmark_matmul_python(M: int, N: int, K: int) -> float:
+    A = Matrix(list(np.random.rand(M, K)), M, K)
+    B = Matrix(list(np.random.rand(K, N)), K, N)
+    C = Matrix(list(np.zeros((M, N))), M, N)
+    secs = timeit(lambda: matmul_python(C, A, B), number=2) / 2
+    gflops = ((2 * M * N * K) / secs) / 1e9
+    print(gflops, "GFLOP/s")
+    return gflops
+
+
+if __name__ == "__main__":
+    benchmark_matmul_python(128, 128, 128)
