@@ -88,7 +88,8 @@ struct Image:
         self._free()
 
     fn _inc_rc(self):
-        self.rc.store(self._get_rc() + 1)
+        let rc = self._get_rc()
+        self.rc.store(rc + 1)
 
     fn _free(self):
         self.rc.free()
@@ -102,7 +103,7 @@ struct Image:
     fn _pos_to_index(self, row: Int, col: Int) -> Int:
         return row * self.width + col
 
-    fn to_numpy_image(self) raises -> PythonObject:
+    def to_numpy_image(self) -> PythonObject:
         let np = Python.import_module("numpy")
         let plt = Python.import_module("matplotlib.pyplot")
 
@@ -175,3 +176,16 @@ def render(image: Image):
     plt.imshow(image.to_numpy_image())
     plt.axis("off")
     plt.savefig("tracing.png")
+
+fn main() raises:
+    let image = Image(192, 256)
+
+    for row in range(image.height):
+        for col in range(image.width):
+            image.set(
+                row,
+                col,
+                Vec3f(Float32(row) / image.height, Float32(col) / image.width, 0),
+            )
+
+    _ = render(image)
