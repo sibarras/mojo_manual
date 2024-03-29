@@ -6,7 +6,7 @@
 
 fn pets():
     var a = MyPet("Loki", 4)
-    let b = MyPet("Sylvie", 2)
+    var b = MyPet("Sylvie", 2)
     print(a.name)
     # a.__del__() runs here for "Loki"
 
@@ -40,7 +40,8 @@ struct MyPet:
         self.age = age
 
     fn __del__(owned self):
-        pass
+        # pass
+        print("Destroying", self.name)
 
 
 # Field lifetimes
@@ -133,7 +134,7 @@ struct TwoStrings:
 
 
 fn use_two_strings():
-    let two_strings = TwoStrings("foo")
+    var two_strings = TwoStrings("foo")
 
 
 fn foo():
