@@ -1,7 +1,7 @@
-# @value
-# struct MyPet:
-#     var name: String
-#     var age: Int
+@value
+struct MyPet:
+    var name: String
+    var age: Int
 
 
 fn pets():
@@ -31,17 +31,17 @@ struct HeapArray[T: Sized]:
         self.data.free()
 
 
-struct MyPet:
-    var name: String
-    var age: Int
+# struct MyPet:
+#     var name: String
+#     var age: Int
 
-    fn __init__(inout self, name: String, age: Int):
-        self.name = name
-        self.age = age
+#     fn __init__(inout self, name: String, age: Int):
+#         self.name = name
+#         self.age = age
 
-    fn __del__(owned self):
-        # pass
-        print("Destroying", self.name)
+#     fn __del__(owned self):
+#         # pass
+#         print("Destroying", self.name)
 
 
 # Field lifetimes

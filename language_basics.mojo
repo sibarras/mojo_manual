@@ -59,13 +59,13 @@ fn loop():
 
 
 fn print_line():
-    let long_text = "This is a long text that should be printed With a lot of space that needs "
+    alias long_text = "This is a long text that should be printed With a lot of space that needs "
                     "to be covered accross the screen but may be too long to fit in a single line"
 
     print(long_text)
 
 fn print_hello():
-    let text =
+    alias text =
         String(",")
         .join("Hello", " World!")
 
@@ -75,14 +75,14 @@ fn print_hello():
 from python import Python
 
 fn use_polars() raises:
-    let pl = Python.import_module("polars")
-    let df = pl.DataFrame([1,2,3,4,5,6]).select(pl.col("column_0").`alias`("foo"))
+    var pl = Python.import_module("polars")
+    var df = pl.DataFrame([1,2,3,4,5,6]).select(pl.col("column_0").`alias`("foo"))
     print(df)
 
 fn main() raises:
     print(greet("World"))
     print(greet2("World"))
-    let mine = MyPair(1, 2)
+    alias mine = MyPair(1, 2)
     mine.dump()
     call_repeat()
     print_line()

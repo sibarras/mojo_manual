@@ -1,6 +1,6 @@
 #  Late initialization
 fn my_function(x: Int):
-    let z: Float32
+    var z: Float32
     if x != 0:
         z = 1.0
     else:
@@ -48,6 +48,6 @@ fn cohersion():
 
 fn main():
     var name = "sam"
-    let user_id = 1
+    alias user_id = 1
 
     name = "Sammy"

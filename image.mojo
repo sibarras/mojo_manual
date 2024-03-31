@@ -8,54 +8,56 @@ struct Vec3f:
 
     @always_inline
     fn __init__(x: Float32, y: Float32, z: Float32) -> Self:
-        return Self {data: SIMD[DType.float32, 4](x, y, z, 0.0)}
+        return Vec3f {data: SIMD[DType.float32, 4](x, y, z, 0)}
 
     @always_inline
     fn __init__(data: SIMD[DType.float32, 4]) -> Self:
-        return Self {data: data}
+        return Vec3f {data: data}
 
     @always_inline
     @staticmethod
-    fn zero() -> Self:
-        return Self(0, 0, 0)
+    fn zero() -> Vec3f:
+        return Vec3f(0, 0, 0)
 
     @always_inline
-    fn __sub__(self, other: Self) -> Self:
+    fn __sub__(self, other: Vec3f) -> Vec3f:
         return self.data - other.data
 
     @always_inline
-    fn __add__(self, other: Self) -> Self:
+    fn __add__(self, other: Vec3f) -> Vec3f:
         return self.data + other.data
 
     @always_inline
-    fn __matmul__(self, other: Self) -> Float32:
+    fn __matmul__(self, other: Vec3f) -> Float32:
         return (self.data * other.data).reduce_add()
 
     @always_inline
-    fn __mul__(self, k: Float32) -> Self:
+    fn __mul__(self, k: Float32) -> Vec3f:
         return self.data * k
 
     @always_inline
-    fn __neg__(self) -> Self:
-        return -self.data
+    fn __neg__(self) -> Vec3f:
+        return self.data * -1.0
 
     @always_inline
-    fn __getitem__(self, idx: Int) -> Float32:
+    fn __getitem__(self, idx: Int) -> SIMD[DType.float32, 1]:
         return self.data[idx]
 
     @always_inline
-    fn cross(self, other: Self) -> Self:
-        let self_zxy = self.data.shuffle[2, 0, 1, 3]()
-        let other_zxy = other.data.shuffle[2, 0, 1, 3]()
+    fn cross(self, other: Vec3f) -> Vec3f:
+        var self_zxy = self.data.shuffle[2, 0, 1, 3]()
+        var other_zxy = other.data.shuffle[2, 0, 1, 3]()
         return (self_zxy * other.data - self.data * other_zxy).shuffle[2, 0, 1, 3]()
 
     @always_inline
-    fn normalize(self) -> Self:
+    fn normalize(self) -> Vec3f:
         return self.data * rsqrt(self @ self)
 
 
 struct Image:
+    # reference count used to make the object efficiently copyable
     var rc: Pointer[Int]
+    # the two dimensional image is represented as a flat array
     var pixels: Pointer[Vec3f]
     var height: Int
     var width: Int
@@ -81,14 +83,14 @@ struct Image:
         return self.rc.load()
 
     fn _dec_rc(self):
-        let rc = self._get_rc()
+        var rc = self._get_rc()
         if rc > 1:
             self.rc.store(rc - 1)
             return
         self._free()
 
     fn _inc_rc(self):
-        let rc = self._get_rc()
+        var rc = self._get_rc()
         self.rc.store(rc + 1)
 
     fn _free(self):
@@ -101,15 +103,17 @@ struct Image:
 
     @always_inline
     fn _pos_to_index(self, row: Int, col: Int) -> Int:
+        # Convert a (rol, col) position into an index in the underlying linear storage
         return row * self.width + col
 
     def to_numpy_image(self) -> PythonObject:
-        let np = Python.import_module("numpy")
-        let plt = Python.import_module("matplotlib.pyplot")
+        var np = Python.import_module("numpy")
+        var plt = Python.import_module("matplotlib.pyplot")
 
-        let np_image = np.zeros((self.height, self.width, 3), np.float32)
+        var np_image = np.zeros((self.height, self.width, 3), np.float32)
 
-        let out_pointer = Pointer(
+        # We use raw pointers to efficiently copy the pixels to the numpy array
+        var out_pointer = Pointer(
             __mlir_op.`pop.index_to_pointer`[
                 _type = __mlir_type[`!kgen.pointer<scalar<f32>>`]
             ](
@@ -118,16 +122,15 @@ struct Image:
                 ).value
             )
         )
-
-        let in_pointer = Pointer(
+        var in_pointer = Pointer(
             __mlir_op.`pop.index_to_pointer`[
                 _type = __mlir_type[`!kgen.pointer<scalar<f32>>`]
-            ](SIMD[DType.index, 1](self.pixels.__as_index()).value)
+            ](SIMD[DType.index, 1](int(self.pixels)).value)
         )
 
         for row in range(self.height):
             for col in range(self.width):
-                let index = self._pos_to_index(row, col)
+                var index = self._pos_to_index(row, col)
                 for dim in range(3):
                     out_pointer.store(index * 3 + dim, in_pointer[index * 4 + dim])
 
@@ -135,15 +138,15 @@ struct Image:
 
 
 def load_image(fname: String) -> Image:
-    let np = Python.import_module("numpy")
-    let plt = Python.import_module("matplotlib.pyplot")
+    var np = Python.import_module("numpy")
+    var plt = Python.import_module("matplotlib.pyplot")
 
-    let np_image = plt.imread(fname)
-    let rows = np_image.shape[0].__index__()
-    let cols = np_image.shape[1].__index__()
-    let image = Image(rows, cols)
+    var np_image = plt.imread(fname)
+    var rows = np_image.shape[0].__index__()
+    var cols = np_image.shape[1].__index__()
+    var image = Image(rows, cols)
 
-    let in_pointer = Pointer(
+    var in_pointer = Pointer(
         __mlir_op.`pop.index_to_pointer`[
             _type = __mlir_type[`!kgen.pointer<scalar<f32>>`]
         ](
@@ -152,14 +155,14 @@ def load_image(fname: String) -> Image:
             ).value
         )
     )
-    let out_pointer = Pointer(
+    var out_pointer = Pointer(
         __mlir_op.`pop.index_to_pointer`[
             _type = __mlir_type[`!kgen.pointer<scalar<f32>>`]
-        ](SIMD[DType.index, 1](image.pixels.__as_index()).value)
+        ](SIMD[DType.index, 1](int(image.pixels)).value)
     )
     for row in range(rows):
         for col in range(cols):
-            let index = image._pos_to_index(row, col)
+            var index = image._pos_to_index(row, col)
             for dim in range(3):
                 out_pointer.store(index * 4 + dim, in_pointer[index * 3 + dim])
     return image
@@ -169,16 +172,16 @@ def render(image: Image):
     np = Python.import_module("numpy")
     plt = Python.import_module("matplotlib.pyplot")
     colors = Python.import_module("matplotlib.colors")
-
     dpi = 32
     fig = plt.figure(1, [image.height // 10, image.width // 10], dpi)
 
     plt.imshow(image.to_numpy_image())
     plt.axis("off")
-    plt.savefig("tracing.png")
+    plt.show()
+
 
 fn main() raises:
-    let image = Image(192, 256)
+    var image = Image(192, 256)
 
     for row in range(image.height):
         for col in range(image.width):
@@ -188,4 +191,4 @@ fn main() raises:
                 Vec3f(Float32(row) / image.height, Float32(col) / image.width, 0),
             )
 
-    _ = render(image)
+    render(image)

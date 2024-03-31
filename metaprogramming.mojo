@@ -52,9 +52,9 @@ struct MyType[s: String, i: Int]:
 
 
 fn call_my_type():
-    let v0 = MyType
-    let v = MyType["Hello"]
-    let v2 = MyType["Hello", 10]
+    alias v0 = MyType
+    alias v = MyType["Hello"]
+    alias v2 = MyType["Hello", 10]
 
 
 # # SIMD Case of Study
@@ -81,7 +81,7 @@ fn use_simd():
     var vector = SIMD[DType.int16, 4](1, 2, 3, 4)
     vector = vector * vector
     for i in range(4):
-        print_no_newline(vector[i], " ")
+        print(vector[i], " ", end="")
     else:
         print()
 
@@ -147,13 +147,13 @@ fn test_static_overloads():
 
 # Using parametrized types and functions
 fn parametrized_types():
-    let small_vec = SIMD[DType.float32, 4](1.0, 2.0, 3.0, 4.0)
+    alias small_vec = SIMD[DType.float32, 4](1.0, 2.0, 3.0, 4.0)
     # Make a big vector containing 1.0 in float16 format.
-    let big_vec = SIMD[DType.float16, 32].splat(1.0)
+    alias big_vec = SIMD[DType.float16, 32].splat(1.0)
     # Do some math and convert the elements to float32.
-    let bigger_vec = (big_vec + big_vec).cast[DType.float32]()
+    alias bigger_vec = (big_vec + big_vec).cast[DType.float32]()
     # You can write types out explicitly if you want of course.
-    let bigger_vec2: SIMD[DType.float32, 32] = bigger_vec
+    alias bigger_vec2: SIMD[DType.float32, 32] = bigger_vec
     print("small_vec type:", small_vec.element_type, "length:", len(small_vec))
     print("bigger_vec2 type:", bigger_vec2.element_type, "length:", len(bigger_vec2))
 
@@ -198,9 +198,9 @@ struct KwParamStruct[greeting: StringLiteral = "Hello", name: StringLiteral = "W
 
 
 fn use_kw_params():
-    let a = KwParamStruct[]()
-    let b = KwParamStruct[name="Mojo"]()
-    let c = KwParamStruct[greeting="Hola"]()
+    alias a = KwParamStruct[]()
+    alias b = KwParamStruct[name="Mojo"]()
+    alias c = KwParamStruct[greeting="Hola"]()
 
 
 # Parameter expressions are just Mojo Code.
@@ -216,8 +216,8 @@ fn concat[
 
 
 fn concat_values():
-    let a = SIMD[DType.float32, 2](1, 2)
-    let x = concat(a, a)
+    alias a = SIMD[DType.float32, 2](1, 2)
+    alias x = concat(a, a)
     print("result type: ", x.element_type, "length: ", len(x))
 
 
@@ -245,8 +245,8 @@ fn reduce_add[ty: DType, size: Int](x: SIMD[ty, size]) -> Int:
         return x[0].to_int() + x[1].to_int()
     else:
         alias half_size = size // 2
-        let lhs = slice[ty, half_size, size](x, 0)
-        let rhs = slice[ty, half_size, size](x, half_size)
+        var lhs = slice[ty, half_size, size](x, 0)
+        var rhs = slice[ty, half_size, size](x, half_size)
         return reduce_add[ty, half_size](lhs + rhs)
 
 
@@ -299,7 +299,7 @@ fn print_params(vec: SIMD):
 
 
 fn see_parametrization():
-    let v = SIMD[DType.float16, 4](1.0, 2.0, 3.0, 4.0)
+    alias v = SIMD[DType.float16, 4](1.0, 2.0, 3.0, 4.0)
     print_params(v)
 
 
@@ -308,7 +308,7 @@ fn on_type():
 
 
 fn on_instance():
-    let v = SIMD[DType.float16, 4](1.0, 2.0, 3.0, 4.0)
+    alias v = SIMD[DType.float16, 4](1.0, 2.0, 3.0, 4.0)
     print(v.type)
 
 
@@ -324,9 +324,9 @@ fn interleave(v1: SIMD, v2: SIMD[v1.type, v1.size]) -> SIMD[v1.type, v1.size * 2
 
 
 fn use_interleave():
-    let v1 = SIMD[DType.float16, 4](1.0, 2.0, 3.0, 4.0)
-    let v2 = SIMD[DType.float16, 4](5.0, 6.0, 7.0, 8.0)
-    let v3 = interleave(v1, v2)
+    alias v1 = SIMD[DType.float16, 4](1.0, 2.0, 3.0, 4.0)
+    alias v2 = SIMD[DType.float16, 4](5.0, 6.0, 7.0, 8.0)
+    alias v3 = interleave(v1, v2)
     print(v3)
 
 
@@ -334,7 +334,7 @@ fn use_interleave():
 @value
 struct Fudge[sugar: Int, cream: Int, chocolate: Int = 7](Stringable):
     fn __str__(self) -> String:
-        let values = StaticIntTuple[3](sugar, cream, chocolate)
+        alias values = StaticIntTuple[3](sugar, cream, chocolate)
         return "Fudge" + String(values)
 
 
@@ -363,17 +363,17 @@ fn main() raises:
     test_static_overloads()
     parametrized_types()
 
-    let v = SIMD[DType.float16, 4](42)
-    let r = rsqrt(v)
+    alias v = SIMD[DType.float16, 4](42)
+    alias r = rsqrt(v)
     print(r)
     use_kw_params()
     concat_values()
-    let a = reduce_add(SIMD[DType.index, 4](1, 2, 3, 4))
+    alias a = reduce_add(SIMD[DType.index, 4](1, 2, 3, 4))
     print(a)
     use_array()
     parallelize[print_value](10)
     print(MyDType.bool.value)
-    print(DType.bool.value)
+    print(DType.bool)
     see_parametrization()
     use_interleave()
     eat(Fudge[5, 5]())

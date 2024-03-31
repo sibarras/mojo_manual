@@ -117,6 +117,6 @@ fn main():
     make_it_talk(Cow())
     trait_make_it_talk(NewDuck())
     trait_make_it_talk(NewCow())
-    let dog = Dog()
+    alias dog = Dog()
     print(dog.get_name())
-    let thing = factory[Thing]()
+    alias thing = factory[Thing]()

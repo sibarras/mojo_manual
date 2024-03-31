@@ -33,8 +33,8 @@ fn mandelbrot_kernel_SIMD[
     simd_width: Int, T: DType
 ](c: ComplexSIMD[T, simd_width]) -> SIMD[T, simd_width]:
     """Vectorized representation of mandelbrot kernel."""
-    let cx = c.re
-    let cy = c.im
+    var cx = c.re
+    var cy = c.im
     var x: SIMD[T, simd_width] = 0
     var y: SIMD[T, simd_width] = 0
     var y2: SIMD[T, simd_width] = 0
@@ -53,7 +53,7 @@ fn mandelbrot_kernel_SIMD[
 
 
 fn vectorized():
-    let t = Tensor[Float](height, width)
+    alias t = Tensor[Float](height, width)
 
     @parameter
     fn worker(row: Int):
@@ -63,21 +63,21 @@ fn vectorized():
         @parameter
         fn compute_vector[simd_width: Int](col: Int):
             """Each time we operate on a `simd_width` vector of pixels."""
-            let cx = min_x + (col + iota[Float, simd_width]()) * scale_x
-            let cy = min_y + row * scale_y
-            let c = ComplexSIMD[Float, simd_width](cx, cy)
-            t.data().simd_store[simd_width](
+            var cx = min_x + (col + iota[Float, simd_width]()) * scale_x
+            var cy = min_y + row * scale_y
+            var c = ComplexSIMD[Float, simd_width](cx, cy)
+            t.data().store[width=simd_width](
                 row * width + col, mandelbrot_kernel_SIMD[simd_width](c)
             )
 
-        vectorize[simd_width, compute_vector](width)
+        vectorize[compute_vector, simd_width](width)
 
     @parameter
     fn bench[simd_width: Int]():
         for row in range(height):
             worker(row)
 
-    let vectorized = benchmark.run[bench[simd_width]](max_runtime_secs=0.5).mean(
+    alias vectorized = benchmark.run[bench[simd_width]](max_runtime_secs=0.5).mean(
         benchmark.Unit.ms
     )
     print("Vectorized: ", vectorized, "ms")
@@ -89,7 +89,7 @@ fn vectorized():
 
 
 fn parallelized():
-    let t = Tensor[Float](height, width)
+    var t = Tensor[Float](height, width)
 
     @parameter
     fn worker(row: Int):
@@ -99,20 +99,20 @@ fn parallelized():
         @parameter
         fn compute_vector[simd_width: Int](col: Int):
             """Each time we operate on a `simd_width` vector of pixels."""
-            let cx = min_x + (col + iota[Float, simd_width]()) * scale_x
-            let cy = min_y + row * scale_y
-            let c = ComplexSIMD[Float, simd_width](cx, cy)
-            t.data().simd_store[simd_width](
+            var cx = min_x + (col + iota[Float, simd_width]()) * scale_x
+            var cy = min_y + row * scale_y
+            var c = ComplexSIMD[Float, simd_width](cx, cy)
+            t.data().store[width=simd_width](
                 row * width + col, mandelbrot_kernel_SIMD[simd_width](c)
             )
 
-        vectorize[simd_width, compute_vector](width)
+        vectorize[compute_vector, simd_width](width)
 
     @parameter
     fn bench_parallel[simd_width: Int]():
         parallelize[worker](height, height)
 
-    let parallelized = benchmark.run[bench_parallel[simd_width]](
+    var parallelized = benchmark.run[bench_parallel[simd_width]](
         max_runtime_secs=0.5
     ).mean(benchmark.Unit.ms)
     print("Parallelized: ", parallelized, "ms")
@@ -126,8 +126,8 @@ fn parallelized():
 fn compute_mandelbrot() -> Tensor[Float]:
     var t = Tensor[Float](height, width)
 
-    let dx = (max_x - min_x) / width
-    let dy = (max_y - min_y) / height
+    var dx = (max_x - min_x) / width
+    var dy = (max_y - min_y) / height
 
     var y = min_y
     for row in range(height):
@@ -143,26 +143,26 @@ fn show_plot(tensor: Tensor[Float]) raises:
     alias scale = 10
     alias dpi = 64
 
-    let np = Python.import_module("numpy")
-    let plt = Python.import_module("matplotlib.pyplot")
-    let colors = Python.import_module("matplotlib.colors")
+    var np = Python.import_module("numpy")
+    var plt = Python.import_module("matplotlib.pyplot")
+    var colors = Python.import_module("matplotlib.colors")
 
-    let numpy_array = np.zeros((height, width), np.float64)
+    var numpy_array = np.zeros((height, width), np.float64)
 
     for row in range(height):
         for col in range(width):
             _ = numpy_array.itemset((col, row), tensor[col, row])
 
-    let fig = plt.figure(1, [scale, scale * height // width], dpi)
-    let ax = fig.add_axes([0.0, 0.0, 1.0, 1.0], False, 1)
-    let light = colors.LightSource(315, 10, 0, 1, 1, 0)
+    var fig = plt.figure(1, [scale, scale * height // width], dpi)
+    var ax = fig.add_axes([0.0, 0.0, 1.0, 1.0], False, 1)
+    var light = colors.LightSource(315, 10, 0, 1, 1, 0)
 
-    let image = light.shade(
+    var image = light.shade(
         numpy_array, plt.cm.hot, colors.PowerNorm(0.3), "hsv", 0, 0, 1.5
     )
     _ = plt.imshow(image)
     _ = plt.axis("off")
-    _ = plt.savefig("mbrot.png")
+    _ = plt.show()
 
 
 fn main():

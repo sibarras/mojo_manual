@@ -1,3 +1,6 @@
+from tensor import Tensor
+
+
 def python_values():
     x = 1
     y = x

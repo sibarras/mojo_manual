@@ -8,28 +8,29 @@ def greet(name):
 
 #  With types
 def greet2(name: String) -> String:
-    let greeting = "Hello, " + name + "!"
+    greeting = "Hello, " + name + "!"
     return greeting
 
 
 # Fn function
 def greet3(name: String) -> String:
-    let greeting = "Hello, " + name + "!"
+    greeting = "Hello, " + name + "!"
     return greeting
 
 
 fn pow(base: Int, exp: Int = 2) -> Int:
+    """This is a doc string."""
     return base**exp
 
 
 fn use_defaults():
-    let z = pow(3)
+    var z = pow(3)
     print(z)
 
 
 # With keywords
 fn use_keywords():
-    let z = pow(exp=3, base=2)
+    alias z = pow(exp=3, base=2)
     print(z)
 
 
@@ -57,16 +58,16 @@ fn foo(name: MyString):
 
 
 fn call_foo():
-    let string = "Hello!"
+    alias string = "Hello!"
     foo(String(string))
     foo(MyString(string))
 
 
 fn main():
-    let x = add(1, 2)
+    alias x = add(1, 2)
     print(x)
 
-    let y = add("Hello, ", "World!")
+    alias y = add("Hello, ", "World!")
     print(y)
     call_foo()
 

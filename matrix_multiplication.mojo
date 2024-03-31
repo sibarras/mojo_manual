@@ -28,7 +28,7 @@ struct Matrix:
 
     @staticmethod
     fn rand(rows: Int, cols: Int) -> Self:
-        let data = DTypePointer[type].alloc(rows * cols)
+        var data = DTypePointer[type].alloc(rows * cols)
         rand(data, rows * cols)
         return Self(rows, cols, data)
 
@@ -39,10 +39,10 @@ struct Matrix:
         self.store[1](y, x, value)
 
     fn load[nelts: Int](self, y: Int, x: Int) -> SIMD[type, nelts]:
-        return self.data.simd_load[nelts](y * self.cols + x)
+        return self.data.load[width=nelts](y * self.cols + x)
 
     fn store[nelts: Int](self, y: Int, x: Int, value: SIMD[type, nelts]):
-        self.data.simd_store[nelts](y * self.cols + x, value)
+        self.data.store[width=nelts](y * self.cols + x, value)
 
 
 fn matmul_naive(c: Matrix, a: Matrix, b: Matrix):
@@ -80,7 +80,7 @@ fn matmul_vectorized_1(c: Matrix, a: Matrix, b: Matrix):
                     m, n, c.load[nelts](m, n) + a[m, k] * b.load[nelts](k, n)
                 )
 
-            vectorize[nelts, dot](c.cols)
+            vectorize[dot, nelts](c.cols)
 
 
 from algorithm import parallelize
@@ -97,7 +97,7 @@ fn matmul_parallelized(c: Matrix, a: Matrix, b: Matrix):
                     m, n, c.load[nelts](m, n) + a[m, k] * b.load[nelts](k, n)
                 )
 
-            vectorize[nelts, dot](c.cols)
+            vectorize[dot, nelts](c.cols)
 
     parallelize[calc_row](c.rows, c.rows)
 
@@ -128,15 +128,12 @@ fn matmul_tiled_parallelized(c: Matrix, a: Matrix, b: Matrix):
                         c.load[nelts](m, n + x) + a[m, k] * b.load[nelts](k, n + x),
                     )
 
-                vectorize[nelts, dot](tile_x)
+                vectorize[dot, nelts](tile_x)
 
         alias tile_size = 4
         tile[calc_tile, nelts * tile_size, tile_size](a.cols, b.cols)
 
     parallelize[calc_row](c.rows, c.rows)
-
-
-from algorithm import vectorize_unroll
 
 
 fn matmul_tiled_unrolled_parallelized(C: Matrix, A: Matrix, B: Matrix):
@@ -158,7 +155,7 @@ fn matmul_tiled_unrolled_parallelized(C: Matrix, A: Matrix, B: Matrix):
 
                 # Vectorize by nelts and unroll by tile_x/nelts
                 # Here unroll factor is 4
-                vectorize_unroll[nelts, tile_x // nelts, dot](tile_x)
+                vectorize[dot, nelts, unroll_factor = tile_x // nelts](tile_x)
 
         alias tile_size = 4
         tile[calc_tile, nelts * tile_size, tile_size](A.cols, C.cols)
@@ -175,7 +172,7 @@ fn tile_parallel[
     # Note: this assumes that ends are multiples of the tiles.
     @parameter
     fn row(yo: Int):
-        let y = tile_y * yo
+        var y = tile_y * yo
         for x in range(0, end_x, tile_x):
             tiled_fn[tile_x, tile_y](x, y)
 
@@ -212,7 +209,9 @@ fn accumulate_registers(c: Matrix, a: Matrix, b: Matrix):
                                 + a[io + i, ko + k] * a.load[nelts](ko + k, jo + j),
                             )
 
-                        vectorize_unroll[nelts, tile_j // nelts, calc_tile_cols](tile_j)
+                        vectorize[
+                            calc_tile_cols, nelts, unroll_factor = tile_j // nelts
+                        ](tile_j)
 
         for i in range(tile_i):
             for j in range(tile_j):
@@ -237,13 +236,13 @@ fn bench[func: fn (Matrix, Matrix, Matrix) -> None](base_gflops: Float64):
     fn test_fn():
         func(c, a, b)
 
-    let secs = benchmark.run[test_fn](max_runtime_secs=1).mean()
+    alias secs = benchmark.run[test_fn](max_runtime_secs=1).mean()
 
     a.data.free()
     b.data.free()
     c.data.free()
-    let gflops = ((2 * M * N * K) / secs) / 1e9
-    let speedup: Float64 = gflops / base_gflops
+    alias gflops = ((2 * M * N * K) / secs) / 1e9
+    var speedup: Float64 = gflops / base_gflops
     print("GFLOPS: ", gflops, " Speedup: ", speedup)
 
 

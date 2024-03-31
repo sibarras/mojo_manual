@@ -45,7 +45,7 @@ def print_shape(borrowed tensor: Tensor[DType.float32]):
 
 
 def run_tensor_shape():
-    let tensor = Tensor[DType.float32](256, 256)
+    alias tensor = Tensor[DType.float32](256, 256)
     print_shape(tensor)
 
 
@@ -56,8 +56,8 @@ def example(borrowed a: Int, inout b: Int, c):
     pass
 
 
-fn example(a: Int, inout b: Int, owned c: object):
-    pass
+# fn example(a: Int, inout b: Int, owned c: object):
+#     pass
 
 
 fn main() raises:

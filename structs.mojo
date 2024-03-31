@@ -44,7 +44,7 @@ struct MyPet2:
 
 
 fn main():
-    let mine = MyPair(2, 4)
+    alias mine = MyPair(2, 4)
     print(mine.first)
     print(mine.get_sum())
 
@@ -52,7 +52,7 @@ fn main():
     l.log_info("Hello, world!")
     Logger.log_info("Hello, world!")
 
-    let dog = MyPet("Dog", 3)
-    let poodle = dog
+    alias dog = MyPet("Dog", 3)
+    alias poodle = dog
     print(poodle.name)
     print(dog.name)
