@@ -23,8 +23,8 @@ struct Material:
 alias W = 1024
 alias H = 768
 alias bg_color = Vec3f(0.02, 0.02, 0.02)
-alias shiny_yellow = Material(Vec3f(0.95, 0.95, 0.4), Vec3f(0.7, 0.6, 0), 30.0)
-alias green_rubber = Material(Vec3f(0.3, 0.7, 0.3), Vec3f(0.9, 0.1, 0), 1.0)
+var shiny_yellow = Material(Vec3f(0.95, 0.95, 0.4), Vec3f(0.7, 0.6, 0), 30.0)
+var green_rubber = Material(Vec3f(0.3, 0.7, 0.3), Vec3f(0.9, 0.1, 0), 1.0)
 
 
 @register_passable("trivial")
@@ -263,9 +263,7 @@ fn create_image_with_spheres_and_specular_lights(
 
 
 fn main() raises:
-    _ = render(
-        create_image_with_sphere(Sphere(Vec3f(0, 0, -20), 3, shiny_yellow), H, W)
-    )
+    render(create_image_with_sphere(Sphere(Vec3f(-3, 0, -16), 2, shiny_yellow), H, W))
 
     # var spheres = List[Sphere]()
     # spheres.push_back(Sphere(Vec3f(-3, 0, -16), 2, shiny_yellow))

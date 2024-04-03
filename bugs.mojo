@@ -2,18 +2,30 @@ from collections import Set
 
 
 struct MyStruct:
-    var name: StringLiteral
+    var name: StringLiteral  # ok with StringLiteral, parser crashes with String
 
-    fn __init__(inout self, name: StringLiteral) -> None:
+    fn __del__(owned self) -> None:
+        print("Deleting the struct with name:", self.name)
+
+
+struct CanBeAliased:
+    var name: String
+
+    fn __init__(inout self, name: String):
         self.name = name
 
-    fn __str__(self) -> String:
-        return self.name
+
+struct CannotBeAliased:
+    var name: String
+
+    fn __init__(inout self, *names: String):
+        self.name = String()
+        for nm in names:
+            print(String(nm))
 
 
 fn main():
     alias const_empty_set = Set[Int]()  # ok
     # alias const_set = Set[Int](1)  # fails
 
-    alias strct: MyStruct = "Sam"
-    print(strct)
+    alias new_var: CanBeAliased = String("Hello!")
